@@ -1,0 +1,11 @@
+spring:
+  profiles:
+    active: dev
+
+ru:
+  zolotarev:
+    relocate:
+      telegram:
+        bot:
+          token: "stab"
+          username: "stab"
