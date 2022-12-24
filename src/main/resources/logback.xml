@@ -3,7 +3,7 @@
     <!--Аппендеры -->
     <!--Файловый аппендер -->
     <appender name="file" class="ch.qos.logback.core.FileAppender">
-        <file>gwent-log.log</file>
+        <file>relocate-log.log</file>
         <layout class="ch.qos.logback.classic.PatternLayout">
             <Pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</Pattern>
         </layout>
