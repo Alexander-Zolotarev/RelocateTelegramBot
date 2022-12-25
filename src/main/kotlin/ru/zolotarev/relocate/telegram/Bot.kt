@@ -6,14 +6,12 @@ import org.springframework.stereotype.Component
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Update
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup
 import ru.zolotarev.relocate.config.BotConfig
 import ru.zolotarev.relocate.model.Command
+import ru.zolotarev.relocate.model.KeyboardButton
 import ru.zolotarev.relocate.service.CountryService
 import ru.zolotarev.relocate.service.StartService
 import ru.zolotarev.relocate.service.TestService
-import ru.zolotarev.relocate.utils.BotUtils.getChatId
 
 @Component
 class Bot(
@@ -29,38 +27,33 @@ class Bot(
 
     override fun onUpdateReceived(update: Update) {
         if (update.hasMessage() && update.message.hasText()) {
-            println("1")
             logger.info("update is: $update")
             val message = update.message
 
-            when (message.text) {
-                Command.START.value -> {
-                    val startCommandProcessing = startService.startCommandProcessing(update)
-                    sendMessage(getChatId(update), startCommandProcessing.get().keyboardMarkup)
+            if (message.hasText() && message.hasEntities()) {
+                when (message.text) {
+                    Command.START.value -> sendMessage(
+                        startService.startCommandProcessing(update).getOrElse { throw IllegalStateException() })
+
+                    Command.COUNTRY.value -> sendMessage(
+                        countryService.countryCommandProcessing(update).getOrElse { throw IllegalStateException() })
+
+                    Command.TEST.value -> sendMessage(
+                        testService.testCommandProcessing(update).getOrElse { throw IllegalStateException() })
                 }
-                Command.COUNTRY.value -> countryService.countryCommandProcessing(update)
-                Command.TEST.value -> testService.testCommandProcessing(update)
+            } else {
+                when(message.text) {
+                    KeyboardButton.COUNTRY.description -> sendMessage(
+                        countryService.countryCommandProcessing(update).getOrElse { throw IllegalStateException() })
+                }
             }
         }
     }
 
-    private fun sendMessage(chatId: String, replyKeyboard: ReplyKeyboardMarkup) {
-        val message = SendMessage()
-        message.chatId = chatId
-        message.replyMarkup = replyKeyboard
-        message.text = "Выберите действие"
+    private fun sendMessage(sendMessage: SendMessage) {
         try {
-            println("3")
-            println("message:$message")
-            execute(message)
-        } catch (e: Exception) {
-            logger.error("Can`t send message to user!")
-        }
-    }
-    private fun sendMessage(chatId: String, textToSend: String) {
-        val message = SendMessage(chatId, textToSend)
-        try {
-            execute(message)
+            logger.info(sendMessage.toString())
+            execute(sendMessage)
         } catch (e: Exception) {
             logger.error("Can`t send message to user!")
         }
