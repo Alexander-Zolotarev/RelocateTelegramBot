@@ -1,6 +1,9 @@
 package ru.zolotarev.relocate.model
 
-enum class Country {
-    KAZAKHSTAN,
-    TURKEY,
+enum class Country(
+    val description: String
+) {
+    KAZAKHSTAN("Казахстан"),
+    TURKEY("Турция"),
+    GEORGIA("Грузия"),
 }

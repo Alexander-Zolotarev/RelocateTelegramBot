@@ -1,22 +1,25 @@
 package ru.zolotarev.relocate.service.impl
 
-import io.vavr.control.Either
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.objects.Update
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
-import ru.zolotarev.relocate.model.Country
-import ru.zolotarev.relocate.model.error.EitherError
-import ru.zolotarev.relocate.service.CountryService
+import ru.zolotarev.relocate.model.CityOfKazakhstan
+import ru.zolotarev.relocate.service.CountryCallbackHandler
 import ru.zolotarev.relocate.utils.BotUtils.chatId
 
 @Service
-class CountryServiceImpl : CountryService{
-    override fun countryCommandProcessing(update: Update): Either<EitherError, SendMessage> {
+class CountryCallbackHandlerImpl : CountryCallbackHandler {
+    override fun textAboutCountry(callbackQuery: CallbackQuery): String {
+        return "Some information about ${callbackQuery.data}"
+    }
+
+    override fun handle(callbackQuery: CallbackQuery): SendMessage {
         val buttons: MutableList<MutableList<InlineKeyboardButton>> = ArrayList()
-        Country.values().map {
-            val button: MutableList<InlineKeyboardButton> = mutableListOf(InlineKeyboardButton.builder()
+        CityOfKazakhstan.values().map {
+            val button: MutableList<InlineKeyboardButton> = mutableListOf(
+                InlineKeyboardButton.builder()
                 .text(it.description)
                 .callbackData(it.name)
                 .build())
@@ -24,9 +27,9 @@ class CountryServiceImpl : CountryService{
         }
 
         val sendMessage = SendMessage()
-        sendMessage.text = "Выберите страну"
-        sendMessage.chatId = chatId(update)
+        sendMessage.text = textAboutCountry(callbackQuery)
+        sendMessage.chatId = callbackQuery.chatId()
         sendMessage.replyMarkup = InlineKeyboardMarkup.builder().keyboard(buttons).build()
-        return Either.right(sendMessage)
+        return sendMessage
     }
 }

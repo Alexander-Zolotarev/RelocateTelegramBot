@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import ru.zolotarev.relocate.config.BotConfig
 import ru.zolotarev.relocate.model.Command
 import ru.zolotarev.relocate.model.KeyboardButton
+import ru.zolotarev.relocate.service.CallbackHandler
 import ru.zolotarev.relocate.service.CountryService
 import ru.zolotarev.relocate.service.StartService
 import ru.zolotarev.relocate.service.TestService
@@ -19,32 +20,45 @@ class Bot(
     private val startService: StartService,
     private val countryService: CountryService,
     private val testService: TestService,
+    private val callbackHandler: CallbackHandler
 ) : TelegramLongPollingBot() {
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     private val token: String = botConfig.token
     private val username: String = botConfig.username
 
+    //TODO Убрать все действия со страной в 1 класс
+    //TODO Придумать как сделать 1 енам с городами(выбор в клавиатуру в зависимости от страны)
+    //TODO Сделать обработку ошибок
+    //TODO Сделать логирование
+    //TODO Рефактор названий классов + удалить неиспользуемое
+
     override fun onUpdateReceived(update: Update) {
+        logger.info("Update is: $update")
+
+        if (update.hasCallbackQuery()) {
+            logger.info("Input callback query: ${update.callbackQuery}")
+            sendMessage(callbackHandler.handle(update))
+        }
+
         if (update.hasMessage() && update.message.hasText()) {
-            logger.info("update is: $update")
             val message = update.message
 
             if (message.hasText() && message.hasEntities()) {
                 when (message.text) {
                     Command.START.value -> sendMessage(
-                        startService.startCommandProcessing(update).getOrElse { throw IllegalStateException() })
-
-                    Command.COUNTRY.value -> sendMessage(
-                        countryService.countryCommandProcessing(update).getOrElse { throw IllegalStateException() })
-
-                    Command.TEST.value -> sendMessage(
-                        testService.testCommandProcessing(update).getOrElse { throw IllegalStateException() })
+                        startService.startCommandProcessing(update).getOrElse { throw IllegalStateException() }
+                    )
                 }
             } else {
-                when(message.text) {
+                when (message.text) {
                     KeyboardButton.COUNTRY.description -> sendMessage(
-                        countryService.countryCommandProcessing(update).getOrElse { throw IllegalStateException() })
+                        countryService.countryCommandProcessing(update).getOrElse { throw IllegalStateException() }
+                    )
+
+                    KeyboardButton.TEST.description -> sendMessage(
+                        testService.testCommandProcessing(update).getOrElse { throw IllegalStateException() }
+                    )
                 }
             }
         }
@@ -55,7 +69,7 @@ class Bot(
             logger.info(sendMessage.toString())
             execute(sendMessage)
         } catch (e: Exception) {
-            logger.error("Can`t send message to user!")
+            logger.error("Can`t send message to user! Cause: $e")
         }
     }
 
